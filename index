@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Napi Utazás</title>
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #000;
+        font-family: 'Georgia', serif;
+        overflow: hidden;
+    }
+    
+    #background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('Gemini_Generated_Image_utcvgputcvgputcv.jfif');
+        background-size: cover;
+        background-position: center;
+        z-index: 1;
+    }
+
+    #overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.95);
+        z-index: 10;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: opacity 1.5s ease-in-out;
+    }
+
+    #start-btn {
+        padding: 15px 40px;
+        font-size: 18px;
+        color: #fff;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 4px;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        transition: all 0.3s ease;
+    }
+
+    #start-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: #fff;
+    }
+
+    #text-container-wrapper {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 80%;
+        max-width: 600px;
+        background-color: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(8px);
+        padding: 30px;
+        border-radius: 12px;
+        z-index: 5;
+        opacity: 0;
+        transition: opacity 2s ease-in-out;
+        
+        -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
+        mask-image: linear-gradient(to bottom, transparent 0%, black 25%, black 100%);
+    }
+
+    #text-container {
+        line-height: 1.6;
+        font-size: 22px;
+        color: #fff;
+        text-align: center;
+        max-height: calc(1.6em * 4.5);
+        overflow-y: hidden;
+        white-space: pre-wrap;
+    }
+
+    .hidden {
+        opacity: 0 !important;
+        pointer-events: none;
+    }
+    
+    .visible {
+        opacity: 1 !important;
+    }
+</style>
+</head>
+<body>
+
+<div id="background"></div>
+
+<div id="overlay">
+    <button id="start-btn">Kattints a mai utazáshoz</button>
+</div>
+
+<div id="text-container-wrapper">
+    <div id="text-container"></div>
+</div>
+
+<audio id="bg-audio" src="The_Glade_at_Dawn.mp3"></audio>
+
+<script>
+    const textToType = `Lépj be ebbe a csendes térbe, ahol a láthatatlan végre formát ölt.
+
+Ami most előtted kibontakozik, az a teremtés finom rezdülése. Ez a néhány sor csupán egy tükörkép, egy gyengéd bemutatója annak, ahogyan a szándék megtalálja a hangját.
+
+Úgy áramlanak eléd a szavak, mint ahogy a múltunk rejtett szálai is megmutatkoznak a mezőben. Tisztán, őszintén és a maguk idejében.
+
+Engedd meg magadnak ezt a megérkezést. Figyeld, ahogy a betűk lassan összeállnak, és érezd a formálódás erejét.
+
+Ez az áramlás most egy híd, egy apró ízelítő abból a varázslatból, ami vár rád. Csak egy megnyíló kapu, hogy meglásd, mi minden lehetséges.`;
+
+    const startBtn = document.getElementById('start-btn');
+    const overlay = document.getElementById('overlay');
+    const textWrapper = document.getElementById('text-container-wrapper');
+    const textContainer = document.getElementById('text-container');
+    const audio = document.getElementById('bg-audio');
+
+    let typingFinished = false;
+    let audioFinished = false;
+    let charIndex = 0;
+    let typeInterval;
+
+    startBtn.addEventListener('click', () => {
+        overlay.classList.add('hidden');
+        textWrapper.classList.add('visible');
+        startExperience();
+    });
+
+    audio.addEventListener('ended', () => {
+        audioFinished = true;
+        checkCompletion();
+    });
+
+    function startExperience() {
+        typingFinished = false;
+        audioFinished = false;
+        charIndex = 0;
+        textContainer.innerHTML = '';
+        
+        if (typeInterval) clearTimeout(typeInterval);
+        
+        audio.currentTime = 0;
+        
+        let playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                let duration = audio.duration;
+                if (!duration || isNaN(duration)) {
+                    duration = 60;
+                }
+                startTyping(duration);
+            }).catch(err => {
+                audioFinished = true;
+                startTyping(60); 
+            });
+        } else {
+            startTyping(60);
+        }
+    }
+
+    function startTyping(audioLengthSeconds) {
+        const textLength = textToType.length;
+        let delayMs = ((audioLengthSeconds * 1000) - 5000) / textLength;
+        if (delayMs < 20) delayMs = 50; 
+        typeWriter(delayMs);
+    }
+
+    function typeWriter(delay) {
+        if (charIndex < textToType.length) {
+            textContainer.innerHTML += textToType.charAt(charIndex);
+            textContainer.scrollTop = textContainer.scrollHeight;
+            charIndex++;
+            typeInterval = setTimeout(() => typeWriter(delay), delay);
+        } else {
+            typingFinished = true;
+            checkCompletion();
+        }
+    }
+
+    function checkCompletion() {
+        if (typingFinished && (audioFinished || audio.error || isNaN(audio.duration))) {
+            setTimeout(() => {
+                textContainer.innerHTML = '';
+                startExperience();
+            }, 4000);
+        }
+    }
+</script>
+
+</body>
+</html>
